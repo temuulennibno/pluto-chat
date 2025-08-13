@@ -18,12 +18,14 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { PFP } from "./PFP";
+import { useRouter } from "next/navigation";
 
 export const ChatSideBar = () => {
-  const { user, accessToken } = useContext(UserContext);
+  const { user, accessToken, setAccessToken } = useContext(UserContext);
 
   const [friends, setFriends] = useState<User[] | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     if (user) {
@@ -31,16 +33,17 @@ export const ChatSideBar = () => {
         .get("/api/friend", {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
-        .then((res) => setFriends(res.data));
+        .then(response => {
+          setFriends(response.data.friends);
+        });
     }
   }, [accessToken, user]);
-
   if (!user) {
     return <></>;
   }
 
   return (
-    <aside className="w-1/4 max-w-60 bg-neutral-800 p-4 flex flex-col border-r border-neutral-700">
+    <aside className="w-64 bg-neutral-800 p-4 flex flex-col border-r border-neutral-700">
       {/* Sidebar Header */}
       <div className="flex justify-between items-center mb-4">
         <span className="text-lg font-semibold">Chat</span>
@@ -101,12 +104,9 @@ export const ChatSideBar = () => {
               className="flex items-center space-x-2 p-2 bg-neutral-700 rounded cursor-pointer hover:bg-neutral-600"
             >
               <PFP size={40} displayName={user.displayName} />
-              <span>It&apos;s you</span>
-              {/* Despite everything, it's still you. */}
             </Link>
           </li>
-          {friends !== null &&
-            friends.length > 0 &&
+          {Array.isArray(friends) && friends.length > 0 &&
             friends.map((friend) => (
               <li key={friend.id}>
                 <Link
@@ -119,25 +119,42 @@ export const ChatSideBar = () => {
               </li>
             ))}
           {friends == null && <p>Loading...</p>}
-          {friends !== null && friends.length === 0 && (
-            <p>Man you must be really 𝓯𝓻𝓮𝓪𝓴𝔂 at parties</p>
+          {Array.isArray(friends) && friends.length === 0 && (
+            <p></p>
           )}
         </ul>
       </div>
-
       {/* Settings Button */}
-      <button
-        className="mt-4 p-2 bg-neutral-700 rounded hover:bg-neutral-600"
-        onClick={() => {
-          toast({
-            title: "We had to cut the budget.",
-            description:
-              "We are starving. And we've got no time. Please don't kill us.",
-          });
-        }}
-      >
-        Settings
-      </button>
+<Dialog>
+  <DialogTrigger asChild>
+    <Button className="mt-4 p-2 bg-neutral-700 rounded hover:bg-neutral-600 w-full">
+      Settings
+    </Button>
+  </DialogTrigger>
+  <DialogContent className="sm:max-w-[400px] bg-neutral-800 text-white border-neutral-700 rounded-xl">
+    <DialogHeader>
+      <DialogTitle>Settings</DialogTitle>
+      <DialogDescription>
+        Account actions and preferences.
+      </DialogDescription>
+    </DialogHeader>
+    <Button
+      variant="destructive"
+      className="w-full mt-4"
+      onClick={() => {
+        setAccessToken(""); // Clear token, triggers context redirect
+        toast({
+          title: "Logged out",
+          description: "You have been logged out.",
+        });
+        // Optionally, force redirect (context should handle this)
+        router.push("/auth/login");
+      }}
+    >
+      Log out
+    </Button>
+  </DialogContent>
+</Dialog>
     </aside>
   );
 };

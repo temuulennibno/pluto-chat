@@ -35,18 +35,9 @@ export const ChatMain = (props: Props_ChatMain) => {
 
   if (!user) return <></>;
   return (
-    <main className="flex-1 flex flex-col h-screen bg-neutral-800">
+    <main className="flex-1 flex flex-col h-screen bg-neutral-900">
       {/* Header */}
-      <header className="bg-neutral-800 text-white p-3 flex items-center justify-between border-b border-neutral-700 h-[5%]">
-        {/* <div className="flex items-center space-x-3">
-            <button className="p-2 rounded bg-neutral-700 hover:bg-neutral-600"></button>
-            <input
-              type="text"
-              placeholder="Search"
-              className="bg-neutral-700 text-white px-3 py-1 rounded focus:outline-none"
-            />
-          </div> */}
-        {/* <DialogTrigger asChild> */}
+      <header className="bg-neutral-900 text-white p-3 flex items-center justify-between border-b border-neutral-700 h-[5%]">
         <Popover>
           <PopoverTrigger className="w-8 h-8 flex items-center justify-center">
             <Inbox size={24} />
@@ -104,24 +95,20 @@ export const ChatMain = (props: Props_ChatMain) => {
           </div>
           <button className="flex items-center space-x-2">
             <PFP displayName={user.displayName} size={32} />
-            {/* <span className="font-semibold">...</span> */}
           </button>
         </div>
-        {/* </DialogTrigger> */}
-        {/* <div className="flex items-center space-x-3">
-            <button className="p-2 bg-neutral-700 rounded hover:bg-neutral-600"></button>
-            <button className="p-2 bg-neutral-700 rounded hover:bg-neutral-600"></button>
-            <button className="p-2 bg-neutral-700 rounded hover:bg-neutral-600">
-              ⋮
-            </button>
-          </div> */}
       </header>
 
-      {props.channel ? (
-        <Chat channel={props.channel}></Chat>
-      ) : (
-        <p>what am i supposed to put here</p>
-      )}
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {props.channel ? (
+          <Chat channel={props.channel}></Chat>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-neutral-400">
+            Select a chat to start messaging.
+          </div>
+        )}
+      </div>
     </main>
   );
 };

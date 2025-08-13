@@ -2,98 +2,92 @@
 
 import { User } from "@prisma/client";
 import axios from "axios";
-import { redirect, usePathname, useRouter } from "next/navigation";
-import { createContext, useEffect, useState } from "react";
-import { ReactNode } from "react";
-
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useEffect, useState, ReactNode } from "react";
+import { useToast } from "@/hooks/use-toast";
 // This is how our user context looks
 interface UserContextType {
-  user: User | null; // We have the User (which is the prisma user thing)
-  accessToken: string; // We have the accessToken (idk maybe we could use it?)
-  setAccessToken: React.Dispatch<React.SetStateAction<string>>; // SetAccessToken for login
+  user: User | null;
+  accessToken: string;
+  setAccessToken: React.Dispatch<React.SetStateAction<string>>;
 }
 
-// Here is our default context looks like
+// Default context
 export const UserContext = createContext<UserContextType>({
-  user: null, // Nothing as you expect
-  accessToken: "", // token to the accesss of aaa a api i think uhh (BOIII 🤣🫱)
-  setAccessToken: () => {}, // yeah it does absolutely nothing lol
+  user: null,
+  accessToken: "",
+  setAccessToken: () => {},
 });
 
-// We DO NOT want this context to work on these routes
+// Routes where context should not redirect
 const FORBIDDENPATHS = ["/auth/login", "/auth/register"];
 
 /**
- * This is our user related context provider.
- *
- * Currently this provider includes:
- * - User data
- * - Access token
- * - Access token setter
- *
- * Usage:
- * ```typescript
- * import { useContext } from "react";
- * import { UserContext } from "@/app/context/user-context";
- *
- * // ...
- *
- * const { user } = useContext(UserContext);
- * console.log(user);
- * ```
+ * UserContextProvider
+ * - Provides user, accessToken, and setAccessToken
  */
 export const UserContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<null | User>(null);
   const [accessToken, setAccessToken] = useState<string>("");
   const router = useRouter();
-
   const path = usePathname();
+  const { toast } = useToast();
 
-  // Set token on load.
+  // Load token from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     setAccessToken(token || "");
   }, []);
 
-  // Do this every time you load in (change route's)
+  // Validate token and set user on token or path change
   useEffect(() => {
     if (accessToken === "") {
       if (
         !localStorage.getItem("accessToken") &&
         !FORBIDDENPATHS.includes(path)
       ) {
-        console.log("Move or smth???");
-        // So uhh if there is like really nothing just change the route
-        redirect("/auth/login");
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to continue.",
+          variant: "destructive",
+        });
+        router.push("/auth/login");
       }
       return;
     }
-    // If there is a token set it.
     localStorage.setItem("accessToken", accessToken);
 
-    // And request a token validation
     axios
       .get("/api/auth/me", {
         headers: { Authorization: "Bearer " + accessToken },
       })
       .then((res) => {
-        // If nothing went wrong do set user and change path
         setUser(JSON.parse(res.data));
         if (FORBIDDENPATHS.includes(path)) {
           router.push("/chat");
         }
       })
-      .catch(() => {
-        // BUT OH NO WRONG ACCESS TOKEN
-        // yeah fire it gng
+      .catch((err) => {
         setAccessToken("");
         setUser(null);
-        redirect("/auth/login");
+        toast({
+          title: "Session Error",
+          description:
+            err?.response?.data?.message ||
+            err.message ||
+            "Your session has expired or is invalid.",
+            variant: "destructive",
+        });
+        if (!FORBIDDENPATHS.includes(path)) {
+          router.push("/auth/login");
+        }
       });
-  }, [accessToken, path, router]);
+  }, [accessToken, path, router, toast]);
 
   return (
-    <UserContext.Provider value={{ user, accessToken, setAccessToken }}>
+    <UserContext.Provider
+      value={{ user, accessToken, setAccessToken }}
+    >
       {children}
     </UserContext.Provider>
   );

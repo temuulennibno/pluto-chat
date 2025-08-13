@@ -17,3 +17,6 @@
     @apply bg-background text-foreground;
   }
 }
+#__next-build-watcher-button {
+  display: none;
+}
